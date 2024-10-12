@@ -1,15 +1,24 @@
-ARG GOLANG_VERSION=1.21
+ARG GOLANG_VERSION=1.22
 ARG ALPINE_VERSION=3.19
+
+# BUILD IMAGE
 FROM golang:${GOLANG_VERSION}-alpine${ALPINE_VERSION} AS builder
 
-RUN apk update && apk add --no-cache git make bash build-base linux-headers
-RUN git clone https://github.com/amnezia-vpn/amneziawg-tools.git
-RUN cd amneziawg-tools/src && \
-    make
+WORKDIR /go
 
+RUN apk update && apk add --no-cache git make bash build-base linux-headers
+
+RUN git clone --depth=1 https://github.com/amnezia-vpn/amneziawg-tools.git && \
+    git clone --depth=1 https://github.com/amnezia-vpn/amneziawg-go.git
+
+RUN cd /go/amneziawg-tools/src && make
+RUN cd /go/amneziawg-go && GOOS=linux GOARCH=arm GOARM=7 make
+
+# FINAL IMAGE
 FROM alpine:${ALPINE_VERSION}
 RUN apk update && apk add --no-cache bash openrc iptables iptables-legacy iproute2
-COPY amnezia-wg/amneziawg-go /usr/bin/amneziawg-go
+
+COPY --from=builder /go/amneziawg-go/amneziawg-go /usr/bin/amneziawg-go
 COPY --from=builder /go/amneziawg-tools/src/wg /usr/bin/awg
 COPY --from=builder /go/amneziawg-tools/src/wg-quick/linux.bash /usr/bin/awg-quick
 COPY wireguard-fs /

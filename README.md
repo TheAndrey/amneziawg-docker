@@ -13,13 +13,6 @@ Install [Docker buildx](https://github.com/docker/buildx) subsystem, make and go
 
 ### Building Docker Image
 
-You may need to initialize submodules
-
-```
-git submodule init
-git submodule update
-```
-
 To build a Docker container for the ARM7 run
 ```
 make build-arm7
